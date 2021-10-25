@@ -80,10 +80,10 @@ checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer,
                              optimizer_d=optimizer_d)
 try:
     load_dict = checkpoint_io.load('model.pt')
-    print("Loaded model checkpoint.")
+    print("Loaded model checkpoint.", flush=True)
 except FileExistsError:
     load_dict = dict()
-    print("No model checkpoint found.")
+    print("No model checkpoint found.", flush=True)
 
 epoch_it = load_dict.get('epoch_it', -1)
 it = load_dict.get('it', -1)
@@ -94,7 +94,7 @@ if metric_val_best == np.inf or metric_val_best == -np.inf:
     metric_val_best = -model_selection_sign * np.inf
 
 print('Current best validation metric (%s): %.8f'
-      % (model_selection_metric, metric_val_best))
+      % (model_selection_metric, metric_val_best), flush=True)
 
 logger = SummaryWriter(os.path.join(out_dir, 'logs'))
 # Shorthands
@@ -138,21 +138,21 @@ while (True):
 
         # # Visualize output
         if visualize_every > 0 and (it % visualize_every) == 0:
-            logger_py.info('Visualizing', flush=True)
+            logger_py.info('Visualizing')
             image_grid = trainer.visualize(it=it)
             if image_grid is not None:
                 logger.add_image('images', image_grid, it)
 
         # Save checkpoint
         if (checkpoint_every > 0 and (it % checkpoint_every) == 0):
-            logger_py.info('Saving checkpoint', flush=True)
-            print('Saving checkpoint')
+            logger_py.info('Saving checkpoint')
+            print('Saving checkpoint', flush=True)
             checkpoint_io.save('model.pt', epoch_it=epoch_it, it=it,
                                loss_val_best=metric_val_best)
 
         # Backup if necessary
         if (backup_every > 0 and (it % backup_every) == 0):
-            logger_py.info('Backup checkpoint', flush=True)
+            logger_py.info('Backup checkpoint')
             checkpoint_io.save('model_%d.pt' % it, epoch_it=epoch_it, it=it,
                                loss_val_best=metric_val_best)
 
