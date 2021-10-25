@@ -175,7 +175,8 @@ class Generator(nn.Module):
             r_random = bg_r[0] + np.random.rand() * (bg_r[1] - bg_r[0])
             R_bg = [
                 torch.from_numpy(Rot.from_euler(
-                    'z', r_random * 2 * np.pi).as_dcm()
+                    # 'z', r_random * 2 * np.pi).as_dcm()
+                    'z', r_random * 2 * np.pi).as_matrix()
                 ) for i in range(batch_size)]
             R_bg = torch.stack(R_bg, dim=0).reshape(
                 batch_size, 3, 3).float()
@@ -190,7 +191,8 @@ class Generator(nn.Module):
             bg_r = self.backround_rotation_range
             r_val = bg_r[0] + val * (bg_r[1] - bg_r[0])
             r = torch.from_numpy(
-                Rot.from_euler('z', r_val * 2 * np.pi).as_dcm()
+                # Rot.from_euler('z', r_val * 2 * np.pi).as_dcm()
+                Rot.from_euler('z', r_val * 2 * np.pi).as_matrix()
             ).reshape(1, 3, 3).repeat(batch_size, 1, 1).float()
         else:
             r = torch.eye(3).unsqueeze(0).repeat(batch_size, 1, 1).float()
