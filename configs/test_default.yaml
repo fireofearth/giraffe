@@ -30,10 +30,10 @@ model:
 training:
   out_dir:  out/00
   batch_size: 32
-  print_every: 10
-  checkpoint_every: 50
-  visualize_every: 80
-  validate_every: 100
+  print_every: 3
+  checkpoint_every: 6
+  visualize_every: 12
+  validate_every: 18
   backup_every: 1000
   learning_rate: 0.0005
   learning_rate_d: 0.0001
