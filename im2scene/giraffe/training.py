@@ -85,7 +85,7 @@ class Trainer(BaseTrainer):
         Args:
             data (dict): data dictionary
         '''
-
+        print("DEBUG: in Trainer.eval_step()", flush=True)
         gen = self.model.generator_test
         if gen is None:
             gen = self.model.generator
@@ -99,9 +99,12 @@ class Trainer(BaseTrainer):
                 x_fake.append(gen().cpu()[:, :3])
         x_fake = torch.cat(x_fake, dim=0)
         x_fake.clamp_(0., 1.)
+        print("DEBUG: before calculate_activation_statistics()", flush=True)
         mu, sigma = calculate_activation_statistics(x_fake)
+        print("DEBUG: done calculate_activation_statistics()", flush=True)
         fid_score = calculate_frechet_distance(
             mu, sigma, self.fid_dict['m'], self.fid_dict['s'], eps=1e-4)
+        print("DEBUG: done calculate_frechet_distance()", flush=True)
         eval_dict = {
             'fid_score': fid_score
         }
