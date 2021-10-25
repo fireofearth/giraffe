@@ -125,37 +125,41 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     Returns:
     --   : The Frechet Distance.
     """
+    print("DEBUG: in im2scene.eval.calculate_frechet_distance()", flush=True)
+    print("mu1", mu1.shape, "sigma1", sigma1.shape, "mu2", mu2.shape, "sigma2", sigma2.shape)
+    print("DEBUG: 1", flush=True)
     mu1 = np.atleast_1d(mu1)
     mu2 = np.atleast_1d(mu2)
-
+    print("DEBUG: 2", flush=True)
     sigma1 = np.atleast_2d(sigma1)
     sigma2 = np.atleast_2d(sigma2)
-
+    print("DEBUG: 3", flush=True)
     assert mu1.shape == mu2.shape, \
         'Training and test mean vectors have different lengths'
     assert sigma1.shape == sigma2.shape, \
         'Training and test covariances have different dimensions'
-
+    print("DEBUG: 4", flush=True)
     diff = mu1 - mu2
 
     # Product might be almost singular
     covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
+    print("DEBUG: 5", flush=True)
     if not np.isfinite(covmean).all():
         msg = ('fid calculation produces singular product; '
                'adding %s to diagonal of cov estimates') % eps
         print(msg)
         offset = np.eye(sigma1.shape[0]) * eps
         covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
-
+    print("DEBUG: 6", flush=True)
     # Numerical error might give slight imaginary component
     if np.iscomplexobj(covmean):
         if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
             m = np.max(np.abs(covmean.imag))
             raise ValueError('Imaginary component {}'.format(m))
         covmean = covmean.real
-
+    print("DEBUG: 7", flush=True)
     tr_covmean = np.trace(covmean)
-
+    print("DEBUG: 8", flush=True)
     return (diff.dot(diff) + np.trace(sigma1) +
             np.trace(sigma2) - 2 * tr_covmean)
 
@@ -179,7 +183,7 @@ def calculate_activation_statistics(files, batch_size=50,
     -- sigma : The covariance matrix of the activations of the pool_3 layer of
                the inception model.
     """
-
+    print("DEBUG: in im2scene.eval.calculate_activation_statistics()", flush=True)
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
     model = InceptionV3([block_idx])
 
@@ -187,6 +191,7 @@ def calculate_activation_statistics(files, batch_size=50,
         model = model.cuda()
 
     act = get_activations(files, model, batch_size, dims, cuda, verbose)
+    print("DEBUG: finished get_activations()", flush=True)
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
