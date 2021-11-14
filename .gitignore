@@ -1,4 +1,9 @@
 out
+data
+local
+.ipynb_checkpoints/
+
+
 .vscode
 .cache
 *.pyc

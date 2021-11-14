@@ -53,3 +53,4 @@ test:
 rendering:
   render_dir: rendering
   render_program: ['object_translation_vertical', 'object_translation_horizontal', 'object_rotation', 'interpolate_app', 'interpolate_shape', 'interpolate_app_bg']
+  # render_program: ['render_add_cars']
