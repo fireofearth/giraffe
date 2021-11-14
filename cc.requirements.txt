@@ -1,0 +1,13 @@
+torch==1.7.0
+torchvision==0.8.*
+#cudatoolkit=10.1
+tensorboard==2.4.*
+pyyaml==5.3.1
+lmdb==0.98
+#kornia=0.3.0
+kornia==0.4.*
+scipy==1.7.1
+tqdm==4.56.*
+imageio==2.9.*
+imageio-ffmpeg==0.4.*
+opencv-python==4.5.*
