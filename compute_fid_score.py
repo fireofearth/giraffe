@@ -1,3 +1,4 @@
+"""Compute FID score used for validation."""
 import os
 import glob
 import numpy as np
