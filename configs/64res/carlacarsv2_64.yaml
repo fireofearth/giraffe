@@ -1,0 +1,21 @@
+# try on Carla dataset without modifying the properties
+data:
+  path: data/carla_cars_v2/images_64/*.png
+  fid_file: data/carla_cars_v2/fid_files/carlaCars_64.npz
+  random_crop: False
+model:
+  bounding_box_generator_kwargs:
+    scale_range_min: [1.0, 1.0, 1.0]
+    scale_range_max: [1.0, 1.0, 1.0]
+    translation_range_min: [-2.0, -2.0, 0.]
+    translation_range_max: [ 2.0,  2.0, 0.]
+    rotation_range: [0., 1.]
+  generator_kwargs:
+    range_u: [0, 1]
+    range_v: [0.066987, 0.283058]
+    range_radius: [2.8, 5.0]
+    depth_range: [0.5, 10.0]
+    fov: 90
+    backround_rotation_range: [0., 1.]
+training:
+  out_dir:  out/carlaCarsV2_256
