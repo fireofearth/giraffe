@@ -1,7 +1,7 @@
 # try on Carla dataset without modifying the properties
 data:
-  path: data/carla_cars_v3/images_64/*.png
-  fid_file: data/carla_cars_v3/fid_files/carlaCars_64.npz
+  path: data/carlacarsv3/images_64/*.png
+  fid_file: data/carlacarsv3/fid_files/carlacars_64.npz
   random_crop: False
 model:
   bounding_box_generator_kwargs:
@@ -28,4 +28,5 @@ model:
     # disable background rotation
     backround_rotation_range: [0., 0.]
 training:
-  out_dir:  out/carlaCarsV2_256
+  out_dir:  out/carlacarsv3_64
+  out_tag: _model

@@ -29,6 +29,7 @@ model:
     skips: []
 training:
   out_dir:  out/00
+  out_tag: _model
   batch_size: 32
   print_every: 10
   checkpoint_every: 500

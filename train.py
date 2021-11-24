@@ -29,6 +29,10 @@ device = torch.device("cuda" if is_cuda else "cpu")
 
 # Shorthands
 out_dir = cfg['training']['out_dir']
+out_tag = cfg['training']['out_tag']
+out_dir = os.path.join(out_dir,
+        time.strftime('%d_%b_%Y_%H_%M_%S', time.localtime()) + out_tag)
+
 backup_every = cfg['training']['backup_every']
 exit_after = args.exit_after
 lr = cfg['training']['learning_rate']
