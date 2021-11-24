@@ -436,12 +436,15 @@ class Generator(nn.Module):
                     # As done in NeRF, add noise during training
                     sigma_i += torch.randn_like(sigma_i)
 
-                # Mask out values outside
-                padd = 0.1
-                mask_box = torch.all(
-                    p_i <= 1. + padd, dim=-1) & torch.all(
-                        p_i >= -1. - padd, dim=-1)
-                sigma_i[mask_box == 0] = 0.
+                mask_values_outside = False
+                if mask_values_outside:
+                    # Mask out values outside
+                    # not very useful since we aren't normalizing p_i, r_i
+                    padd = 0.1
+                    mask_box = torch.all(
+                        p_i <= 1. + padd, dim=-1) & torch.all(
+                            p_i >= -1. - padd, dim=-1)
+                    sigma_i[mask_box == 0] = 0.
 
                 # Reshape
                 sigma_i = sigma_i.reshape(batch_size, n_points, n_steps)

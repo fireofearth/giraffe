@@ -100,7 +100,8 @@ class Decoder(nn.Module):
     def transform_points(self, p, views=False):
         # Positional encoding
         # normalize p between [-1, 1]
-        p = p / self.downscale_p_by
+        if not views:
+            p = p / self.downscale_p_by
 
         # we consider points up to [-1, 1]
         # so no scaling required here
