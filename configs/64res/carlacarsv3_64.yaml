@@ -1,6 +1,6 @@
 # try on Carla dataset without modifying the properties
 data:
-  path: data/carlacarsv3/images_64/*.png
+  path: data/carlacarsv3/images/64/*.png
   fid_file: data/carlacarsv3/fid_files/carlacars_64.npz
   random_crop: False
 model:
