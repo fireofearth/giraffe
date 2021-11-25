@@ -12,8 +12,10 @@ model:
     rotation_range: [0., 1.]
   decoder_kwargs:
     downscale_p_by: 4.0
+    n_freq_posenc_views: 8
   background_generator_kwargs:
     downscale_p_by: 4.0
+    n_freq_posenc_views: 8
   generator_kwargs:
     # rotation range
     # range_u: [0, 1]
