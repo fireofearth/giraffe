@@ -34,8 +34,10 @@ out_tag = cfg['training']['out_tag']
 out_dir = os.path.join(out_dir,
         time.strftime('%d_%b_%Y_%H_%M_%S', time.localtime()) + out_tag)
 cfg['training']['out_dir'] = out_dir
-config_path = "test_config.yaml"
-with open(out_dir, 'w') as f:
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+config_path = os.path.join(out_dir, "config.yaml")
+with open(config_path, 'w') as f:
     yaml.dump(cfg, f, default_flow_style=False)
 
 # Shorthands
@@ -55,10 +57,6 @@ elif cfg['training']['model_selection_mode'] == 'minimize':
 else:
     raise ValueError('model_selection_mode must be '
                      'either maximize or minimize.')
-
-# Output directory
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
 
 train_dataset = config.get_dataset(cfg)
 train_loader = torch.utils.data.DataLoader(
