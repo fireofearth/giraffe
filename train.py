@@ -1,3 +1,4 @@
+import yaml
 import torch
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
@@ -27,12 +28,17 @@ cfg = config.load_config(args.config, 'configs/default.yaml')
 is_cuda = (torch.cuda.is_available() and not args.no_cuda)
 device = torch.device("cuda" if is_cuda else "cpu")
 
-# Shorthands
+# update output directory
 out_dir = cfg['training']['out_dir']
 out_tag = cfg['training']['out_tag']
 out_dir = os.path.join(out_dir,
         time.strftime('%d_%b_%Y_%H_%M_%S', time.localtime()) + out_tag)
+cfg['training']['out_dir'] = out_dir
+config_path = "test_config.yaml"
+with open(out_dir, 'w') as f:
+    yaml.dump(cfg, f, default_flow_style=False)
 
+# Shorthands
 backup_every = cfg['training']['backup_every']
 exit_after = args.exit_after
 lr = cfg['training']['learning_rate']
