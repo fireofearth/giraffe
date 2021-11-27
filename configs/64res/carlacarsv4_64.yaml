@@ -1,10 +1,13 @@
 # improve hyperparameter for sampling coordinates from camera ray.
 # increase size of positional encoding for viewing direction.
+# adjust size of latents
 data:
   path: data/carlacarsv3/images/64/*.png
   fid_file: data/carlacarsv3/fid_files/carlacars_64.npz
   random_crop: False
 model:
+  z_dim: 64
+  z_dim_bg: 128
   bounding_box_generator_kwargs:
     scale_range_min: [1.0, 1.0, 1.0]
     scale_range_max: [1.0, 1.0, 1.0]
@@ -32,4 +35,4 @@ model:
     backround_rotation_range: [0., 0.]
 training:
   out_dir:  out/carlacarsv3_64
-  out_tag: _model
+  out_tag: _z64
