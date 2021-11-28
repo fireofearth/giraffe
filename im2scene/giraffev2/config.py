@@ -56,7 +56,7 @@ def get_model(cfg, device=None, len_dataset=0, **kwargs):
         bounding_box_generator = \
             models.bounding_box_generator_dict[bounding_box_generator](
                 z_dim=z_dim,
-                n_boxes=n_foreground,
+                n_foreground=n_foreground,
                 **bounding_box_generator_kwargs
             )
     if neural_renderer is not None:
