@@ -10,19 +10,19 @@ def parse_arguments():
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
         "--image-directory",
-        default="data/carla_cars_v2/images_64",
+        default="data/carlacarsv3/images/64",
         type=str,
         help="Directory containing images to downsample.",
     )
     argparser.add_argument(
         "--out-directory",
-        default="data/carla_cars_v2/fid_files",
+        default="data/carlacarsv3/fid_files",
         type=str,
         help="Directory to save FID score.",
     )
     argparser.add_argument(
         "--label",
-        default="carlaCars_64",
+        default="carlacars_64",
         type=str,
         help="Name of FID file"
     )

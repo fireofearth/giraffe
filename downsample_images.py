@@ -1,25 +1,59 @@
 import os
+import logging
 import glob
-import cv2
 import pathlib
 import argparse
+import multiprocessing as mp
+
+import cv2
 #import matplotlib.pyplot as plt
+
+logging.basicConfig(
+    format="%(asctime)s: %(levelname)s: %(message)s", level=logging.INFO
+)
 
 def parse_arguments():
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
         "--image-directory",
-        default="data/carla_cars_v2/images",
+        default="data/carlacarsv2/images/256",
         type=str,
         help="Directory containing images to downsample.",
     )
     argparser.add_argument(
         "--out-directory",
-        default="data/carla_cars_v2/images_64",
+        default="data/carlacarsv2/images/64",
         type=str,
         help="Directory to downsample images.",
     )
+    argparser.add_argument(
+        "--size",
+        default=64,
+        type=int,
+        help="Target size of image to downsample.",
+    )
     return argparser.parse_args()
+
+
+def divide(n, iterable):
+    """Divide the elements from *iterable* into *n* parts as lists, maintaining order.
+    Taken from more-itertools with minor modification."""
+    if n < 1:
+        raise ValueError('n must be at least 1')
+    try:
+        iterable[:0]
+    except TypeError:
+        seq = tuple(iterable)
+    else:
+        seq = iterable
+    q, r = divmod(len(seq), n)
+    ret = []
+    stop = 0
+    for i in range(1, n + 1):
+        start = stop
+        stop += q + 1 if i <= r else q
+        ret.append(list(seq[start:stop]))
+    return ret
 
 
 def path_to_filename(path, with_suffix=True):
@@ -70,12 +104,26 @@ https://stackoverflow.com/questions/50963283/python-opencv-imshow-doesnt-need-co
 https://stackoverflow.com/questions/39316447/opencv-giving-wrong-color-to-colored-images-on-loading
 """
 
+def worker_task(infile_paths, out_directory, downsample_size):
+    for infile_path in infile_paths:
+        fn = path_to_filename(infile_path, with_suffix=True)
+        outfile_path = os.path.join(out_directory, fn)
+        downsample_image(infile_path, outfile_path, downsample_size)
+
+
 config = parse_arguments()
 os.makedirs(config.out_directory, exist_ok=True)
-l = glob.glob(os.path.join(config.image_directory, "*.png"))
-for infile_path in l:
-    # show_image(infile_path)
-    fn = path_to_filename(infile_path, with_suffix=True)
-    outfile_path = os.path.join(config.out_directory, fn)
-    downsample_image(infile_path, outfile_path, 64)
-
+paths = glob.glob(os.path.join(config.image_directory, "*.png"))
+cpu_count = mp.cpu_count()
+n_processes = min(cpu_count, len(paths) // 5)
+logging.info(f"Found {len(paths)} images in image directory {config.image_directory}")
+logging.info(f"There are {cpu_count} CPUs, using {n_processes} of them.")
+processes = []
+for infile_paths in divide(n_processes, paths):
+    p = mp.Process(
+        target=worker_task,
+        args=(infile_paths, config.out_directory, config.size)
+    )
+    p.start()
+for p in processes:
+    p.join()
