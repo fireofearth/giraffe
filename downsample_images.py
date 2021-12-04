@@ -104,6 +104,7 @@ https://stackoverflow.com/questions/50963283/python-opencv-imshow-doesnt-need-co
 https://stackoverflow.com/questions/39316447/opencv-giving-wrong-color-to-colored-images-on-loading
 """
 
+
 def worker_task(infile_paths, out_directory, downsample_size):
     for infile_path in infile_paths:
         fn = path_to_filename(infile_path, with_suffix=True)
@@ -125,5 +126,8 @@ for infile_paths in divide(n_processes, paths):
         args=(infile_paths, config.out_directory, config.size)
     )
     p.start()
+    processes.append(p)
+
 for p in processes:
     p.join()
+
