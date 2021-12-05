@@ -111,23 +111,25 @@ def worker_task(infile_paths, out_directory, downsample_size):
         outfile_path = os.path.join(out_directory, fn)
         downsample_image(infile_path, outfile_path, downsample_size)
 
+def main():
+    config = parse_arguments()
+    os.makedirs(config.out_directory, exist_ok=True)
+    paths = glob.glob(os.path.join(config.image_directory, "*.png"))
+    cpu_count = mp.cpu_count()
+    n_processes = min(cpu_count, len(paths) // 5)
+    logging.info(f"Found {len(paths)} images in image directory {config.image_directory}")
+    logging.info(f"There are {cpu_count} CPUs, using {n_processes} of them.")
+    processes = []
+    for infile_paths in divide(n_processes, paths):
+        p = mp.Process(
+            target=worker_task,
+            args=(infile_paths, config.out_directory, config.size)
+        )
+        p.start()
+        processes.append(p)
 
-config = parse_arguments()
-os.makedirs(config.out_directory, exist_ok=True)
-paths = glob.glob(os.path.join(config.image_directory, "*.png"))
-cpu_count = mp.cpu_count()
-n_processes = min(cpu_count, len(paths) // 5)
-logging.info(f"Found {len(paths)} images in image directory {config.image_directory}")
-logging.info(f"There are {cpu_count} CPUs, using {n_processes} of them.")
-processes = []
-for infile_paths in divide(n_processes, paths):
-    p = mp.Process(
-        target=worker_task,
-        args=(infile_paths, config.out_directory, config.size)
-    )
-    p.start()
-    processes.append(p)
+    for p in processes:
+        p.join()
 
-for p in processes:
-    p.join()
-
+if __name__ == "__main__":
+    main()

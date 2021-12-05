@@ -1,0 +1,35 @@
+# based on carlacarsv3 dataset.
+# static camera, only stying is changed.
+data:
+  path: data/carlacars_static_camera/images/64/*.png
+  fid_file: data/carlacars_static_camera/fid_files/carlacars_64.npz
+  random_crop: False
+model:
+  bounding_box_generator_kwargs:
+    scale_range_min: [1.0, 1.0, 1.0]
+    scale_range_max: [1.0, 1.0, 1.0]
+    translation_range_min: [0., 0, 0.]
+    translation_range_max: [0., 0, 0.]
+    rotation_range: [0., 1.]
+  decoder_kwargs:
+    downscale_p_by: 4.0
+    n_freq_posenc_views: 4
+  background_generator_kwargs:
+    downscale_p_by: 4.0
+    n_freq_posenc_views: 4
+  generator_kwargs:
+    # rotation range
+    range_u: [0, 0]
+    # elevation range
+    range_v: [0.283058, 0.283058]
+    # radius range
+    range_radius: [7.0, 7.0]
+    # distances along the ray to sample points
+    depth_range: [4.0, 8.5]
+    # FOV determines spread of rays
+    fov: 30
+    # disable background rotation
+    backround_rotation_range: [0., 0.]
+training:
+  out_dir:  out/carlacars_static_camera_64
+  out_tag: _model
