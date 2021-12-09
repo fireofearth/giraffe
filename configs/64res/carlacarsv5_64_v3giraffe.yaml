@@ -1,6 +1,6 @@
-# revert n_freq_posenc_views and z_dim since this seems to cause poorer performance
-# set full azimurth rotation range
+# copied from carlacarsv5_64.yaml with modifications
 # using GIRAFFE v3 hierarchical sampling
+method: giraffev3
 data:
   path: data/carlacarsv3/images/64/*.png
   fid_file: data/carlacarsv3/fid_files/carlacars_64.npz
