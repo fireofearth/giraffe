@@ -1,8 +1,10 @@
-# based on carlacarsv5_64.yaml
-method: giraffev2
+# copied from carlacarsv5_64.yaml with modifications
+# using GIRAFFE v3 hierarchical sampling
+# Using carlacarsv4 dataset to make the car translate more.
+method: giraffev3
 data:
-  path: data/carlacarsandpedv1/images/64/*.png
-  fid_file: data/carlacarsandpedv1/fid_files/carlacars_64.npz
+  path: data/carlacarsv4/images/64/*.png
+  fid_file: data/carlacarsv4/fid_files/carlacars_64.npz
   random_crop: False
 model:
   bounding_box_generator_kwargs:
@@ -11,27 +13,27 @@ model:
     translation_range_min: [-2.0, -2.0, 0.]
     translation_range_max: [ 2.0,  2.0, 0.]
     rotation_range: [0., 1.]
-    check_collison: True
-    collision_padding: -0.95
   decoder_kwargs:
-    downscale_p_by: 8.0
+    downscale_p_by: 4.0
   background_generator_kwargs:
-    downscale_p_by: 8.0
+    downscale_p_by: 4.0
   generator_kwargs:
-    # rotation range
+    n_ray_samples: 32
+    n_fine_samples: 32
+    # rotation range: since we rotate camera while keeping forground poses, background constant
     range_u: [0, 1]
     # elevation range
     range_v: [0.066987, 0.283058]
     # radius range
     range_radius: [7.0, 8.0]
     # distances along the ray to sample points
-    depth_range: [2.5, 11.0]
+    depth_range: [4.0, 9.5]
     # FOV determines spread of rays
     fov: 30
-    # disable background rotation
+    # disable background rotation since we do not hold object pose constant while rotating background.
     backround_rotation_range: [0., 0.]
 training:
   multi_gpu: true
   backup_every: 50_000
-  out_dir:  out/carlacarsandped_64res_v1dataset_v2config
+  out_dir:  out/carlacars_64res_v3giraffe_v3dataset_v5config
   out_tag: _model
