@@ -1,6 +1,6 @@
 import yaml
 from im2scene import data
-from im2scene import gan2d, giraffe, giraffev2
+from im2scene import gan2d, giraffe, giraffev2, giraffev3
 import logging
 import os
 
@@ -10,6 +10,7 @@ method_dict = {
     'gan2d': gan2d,
     'giraffe': giraffe,
     'giraffev2': giraffev2,
+    'giraffev3': giraffev3,
 }
 
 
