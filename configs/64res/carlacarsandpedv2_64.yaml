@@ -29,5 +29,7 @@ model:
     # disable background rotation
     backround_rotation_range: [0., 0.]
 training:
+  multi_gpu: true
+  backup_every: 50_000
   out_dir:  out/carlacarsandped_64res_v1dataset_v2config
   out_tag: _model
