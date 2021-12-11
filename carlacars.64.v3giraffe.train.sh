@@ -10,6 +10,6 @@
 echo "load modules and Python environment"
 source $HOME/scratch/py38giraffe.sh
 
-python train.py configs/64res/carlacarsv5_64_v3giraffe.yaml \
+python train.py configs/64res/carlacarsv6_64_v3giraffe.yaml \
 	--exit-after 172000
 
