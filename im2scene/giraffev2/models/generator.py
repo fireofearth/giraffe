@@ -63,6 +63,7 @@ class Generator(nn.Module):
 
         self.camera_matrix = get_camera_mat(fov=fov).to(device)
 
+        # (NEW) multiple decoders
         n_decoders = len(decoders)
         if n_decoders > 0:
             self.decoders = []

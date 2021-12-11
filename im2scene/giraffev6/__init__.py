@@ -1,7 +1,7 @@
 """GIRAFFE v6 uses separate decoders for each object with masking fix.
 """
 
-from im2scene.giraffe import (
+from im2scene.giraffev6 import (
     config, training, models
 )
 
