@@ -1,6 +1,6 @@
-"""GIRAFFE v4 fix using masking of CARLA foreground objects"""
+"""GIRAFFE v4 fix by masking samples for CARLA foreground objects that are out of bounds"""
 
-from im2scene.giraffe import (
+from im2scene.giraffev4 import (
     config, training, models
 )
 

@@ -9,6 +9,7 @@ data:
   fid_file: data/carlacarsandpedv1/fid_files/carlacars_64.npz
   random_crop: False
 model:
+  n_foreground: 2
   bounding_box_generator_kwargs:
     scale_range_min: [1.0, 1.0, 1.0]
     scale_range_max: [1.0, 1.0, 1.0]

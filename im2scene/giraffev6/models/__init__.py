@@ -1,5 +1,5 @@
 import torch.nn as nn
-from im2scene.giraffe.models import (
+from im2scene.giraffev6.models import (
     decoder, generator, bounding_box_generator, neural_renderer)
 
 
