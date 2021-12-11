@@ -29,7 +29,7 @@ model:
     # radius range
     range_radius: [7.0, 8.0]
     # distances along the ray to sample points
-    depth_range: [2, 14.0]
+    depth_range: [2.0, 14.0]
     # FOV determines spread of rays
     fov: 30
     # disable background rotation
