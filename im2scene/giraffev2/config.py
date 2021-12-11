@@ -1,6 +1,6 @@
 import os
 from im2scene.discriminator import discriminator_dict
-from im2scene.giraffe import models, training, rendering
+from im2scene.giraffev2 import models, training, rendering
 from copy import deepcopy
 import numpy as np
 
@@ -38,10 +38,10 @@ def get_model(cfg, device=None, len_dataset=0, **kwargs):
 
     decoders = []
     for _ in range(n_foreground):
-        decoder = models.decoder_dict[decoder](
+        _decoder = models.decoder_dict[decoder](
             z_dim=z_dim, **decoder_kwargs
         )
-        decoders.append(decoder)
+        decoders.append(_decoder)
 
     if discriminator is not None:
         discriminator = discriminator_dict[discriminator](

@@ -1,6 +1,6 @@
-"""GIRAFFE uses hierarchical sampling of sample points."""
+"""GIRAFFE v3 uses hierarchical sampling of sample points."""
 
-from im2scene.giraffe import (
+from im2scene.giraffev3 import (
     config, training, models
 )
 

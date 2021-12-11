@@ -1,6 +1,6 @@
 import os
 from im2scene.discriminator import discriminator_dict
-from im2scene.giraffe import models, training, rendering
+from im2scene.giraffev3 import models, training, rendering
 from copy import deepcopy
 import numpy as np
 

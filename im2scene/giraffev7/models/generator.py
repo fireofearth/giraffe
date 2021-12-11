@@ -9,6 +9,57 @@ from scipy.spatial.transform import Rotation as Rot
 from im2scene.camera import get_camera_mat, get_random_pose, get_camera_pose
 
 
+def sample_pdf(bins, weights, N_samples, det=False):
+    """Sample points from B batches of unnormalized piecewise constant distribution
+    using inverse transform sampling.
+    Based on: https://github.com/yenchenlin/nerf-pytorch
+    
+    Parameters
+    ==========
+    bins : torch.Tensor
+        The start and end positions of the M 'bins' where distribution is contant. Has shape (B,*,M + 1).
+    weights : torch.Tensor
+        The unnormalized value of the distribution at each 'bin'. Has shape (B,*,M).
+    N_samples : torch.Tensor
+        The number of points to sample from distribution for each of the (B,*) batches.
+    det : bool
+        Deterministically sample from distribution according to weight.
+    
+    Returns
+    =======
+    torch.Tensor
+        The sampled points of shape (B,*,N_samples).
+    """
+    weights = weights + 1e-5 # prevent nans
+    pdf = weights / torch.sum(weights, -1, keepdim=True)
+    cdf = torch.cumsum(pdf, -1)
+    cdf = torch.cat([torch.zeros_like(cdf[...,:1]), cdf], -1) # (batch, len(bins))
+
+    # Take uniform samples
+    if det:
+        u = torch.linspace(0., 1., steps=N_samples)
+        u = u.expand(list(cdf.shape[:-1]) + [N_samples])
+    else:
+        u = torch.rand(list(cdf.shape[:-1]) + [N_samples])
+
+    # Invert CDF
+    u = u.contiguous()
+    inds = torch.searchsorted(cdf, u, right=True)
+    below = torch.max(torch.zeros_like(inds-1), inds-1)
+    above = torch.min((cdf.shape[-1] - 1) * torch.ones_like(inds), inds)
+    inds_g = torch.stack([below, above], -1)  # (..., N_samples, 2)
+
+    matched_shape = [*inds_g.shape[:-2], inds_g.shape[-2], cdf.shape[-1]]
+    cdf_g = torch.gather(cdf.unsqueeze(-2).expand(matched_shape), -1, inds_g)
+    bins_g = torch.gather(bins.unsqueeze(-2).expand(matched_shape), -1, inds_g)
+
+    denom = (cdf_g[...,1]-cdf_g[...,0])
+    denom = torch.where(denom<1e-5, torch.ones_like(denom), denom)
+    t = (u-cdf_g[...,0])/denom
+    samples = bins_g[...,0] + t * (bins_g[...,1]-bins_g[...,0])
+    return samples
+
+
 class Generator(nn.Module):
     ''' GIRAFFE Generator Class.
 
@@ -35,8 +86,10 @@ class Generator(nn.Module):
             composition operator instead
     '''
 
-    def __init__(self, device, z_dim=256, z_dim_bg=128, decoders=[],
-                 range_u=(0, 0), range_v=(0.25, 0.25), n_ray_samples=64,
+    def __init__(self, device, z_dim=256, z_dim_bg=128, decoder=None,
+                 range_u=(0, 0), range_v=(0.25, 0.25),
+                 n_ray_samples=32,
+                 n_fine_samples=32,
                  range_radius=(2.732, 2.732), depth_range=[0.5, 6.],
                  background_generator=None,
                  bounding_box_generator=None, resolution_vol=16,
@@ -45,11 +98,13 @@ class Generator(nn.Module):
                  backround_rotation_range=[0., 0.],
                  sample_object_existance=False,
                  use_max_composition=False,
+                 hierarchical_sampling=True,
                  mask_foreground_bound=3.,
                  mask_foreground_outside=True, **kwargs):
         super().__init__()
         self.device = device
         self.n_ray_samples = n_ray_samples
+        self.n_fine_samples = n_fine_samples
         self.range_u = range_u
         self.range_v = range_v
         self.resolution_vol = resolution_vol
@@ -62,6 +117,8 @@ class Generator(nn.Module):
         self.z_dim = z_dim
         self.z_dim_bg = z_dim_bg
         self.use_max_composition = use_max_composition
+        # (NEW) hierarchical sampling method
+        self.hierarchical_sampling = hierarchical_sampling
         # (NEW) mask volume rendering of foreground objects outside bounds
         self.mask_foreground_bound = mask_foreground_bound
         # (NEW) mask volume rendering of foreground objects outside bounds
@@ -69,14 +126,10 @@ class Generator(nn.Module):
 
         self.camera_matrix = get_camera_mat(fov=fov).to(device)
 
-        # (NEW) multiple decoders
-        n_decoders = len(decoders)
-        if n_decoders > 0:
-            self.decoders = []
-            for idx in range(n_decoders):
-                self.decoders.append(decoders[idx].to(device))
+        if decoder is not None:
+            self.decoder = decoder.to(device)
         else:
-            self.decoders = []
+            self.decoder = None
 
         if background_generator is not None:
             self.background_generator = background_generator.to(device)
@@ -402,6 +455,7 @@ class Generator(nn.Module):
         res = self.resolution_vol
         device = self.device
         n_steps = self.n_ray_samples
+        n_fine = self.n_fine_samples
         n_points = res * res
         depth_range = self.depth_range
         batch_size = latent_codes[0].shape[0]
@@ -420,27 +474,34 @@ class Generator(nn.Module):
             n_points, camera_mat=camera_matrices[0],
             world_mat=camera_matrices[1])
         ray_vector = pixels_world - camera_world
-        # batch_size x n_points x n_steps
+
+        # Variables used for coarse and fine sampling
+        n_boxes = latent_codes[0].shape[1]
+        n_iter = n_boxes if not_render_background else n_boxes + 1
+        if only_render_background:
+            n_iter = 1
+            n_boxes = 0
+
+        # Compute positions on ray for coarse sampling
+        # di has shape (batch_size, n_points, n_steps)
+        #   The positions along ray within interval depth_range
         di = depth_range[0] + \
             torch.linspace(0., 1., steps=n_steps).reshape(1, 1, -1) * (
                 depth_range[1] - depth_range[0])
         di = di.repeat(batch_size, n_points, 1).to(device)
         if mode == 'training':
+            # di >= depth_range[0]
             di = self.add_noise_to_interval(di)
 
-        n_boxes = latent_codes[0].shape[1]
+        # Extract features and sigma from course sampling 
         feat, sigma = [], []
-        n_iter = n_boxes if not_render_background else n_boxes + 1
-        if only_render_background:
-            n_iter = 1
-            n_boxes = 0
         for i in range(n_iter):
             if i < n_boxes:  # Object
                 p_i, r_i = self.get_evaluation_points(
                     pixels_world, camera_world, di, transformations, i)
                 z_shape_i, z_app_i = z_shape_obj[:, i], z_app_obj[:, i]
 
-                feat_i, sigma_i = self.decoders[i](p_i, r_i, z_shape_i, z_app_i)
+                feat_i, sigma_i = self.decoder(p_i, r_i, z_shape_i, z_app_i)
 
                 if mode == 'training':
                     # As done in NeRF, add noise during training
@@ -476,6 +537,7 @@ class Generator(nn.Module):
         feat = torch.stack(feat, dim=0)
 
         if self.sample_object_existance:
+            # TODO: have not tested hierarchical sampling with object existance
             object_existance = self.get_object_existance(n_boxes, batch_size)
             # add ones for bg
             object_existance = np.concatenate(
@@ -494,6 +556,82 @@ class Generator(nn.Module):
 
         # Get Volume Weights
         weights = self.calc_volume_weights(di, ray_vector, sigma_sum)
+
+        if self.hierarchical_sampling:
+            # START hierarchical sampling
+            # If using hierarchical sampling then throw away sigma, feat
+            # and recompute! This is wasteful. Improve?
+            bins = torch.cat((depth_range[0]*torch.ones_like(di[:,:,:1]), di))
+            # di_fine has shape (batch_size, n_points, n_steps)
+            di_fine = sample_pdf(bins, weights, n_fine, det=(mode != 'training'))
+            di_fine = di_fine.detach()
+            di, _ = torch.sort(torch.cat([di, di_fine], -1), -1)
+
+            # Extract features and sigma from fine sampling. Duplicate code.
+            feat, sigma = [], []
+            for i in range(n_iter):
+                if i < n_boxes:  # Object
+                    p_i, r_i = self.get_evaluation_points(
+                        pixels_world, camera_world, di, transformations, i)
+                    z_shape_i, z_app_i = z_shape_obj[:, i], z_app_obj[:, i]
+
+                    feat_i, sigma_i = self.decoder(p_i, r_i, z_shape_i, z_app_i)
+
+                    if mode == 'training':
+                        # As done in NeRF, add noise during training
+                        sigma_i += torch.randn_like(sigma_i)
+
+                    if self.mask_foreground_outside:
+                        # Mask forground objects outside bounds
+                        b = self.mask_foreground_bound
+                        mask_box = torch.all(
+                            p_i <= b, dim=-1) & torch.all(
+                                p_i >= -b, dim=-1)
+                        sigma_i[mask_box == 0] = 0.
+
+                    # Reshape
+                    sigma_i = sigma_i.reshape(batch_size, n_points, n_steps)
+                    feat_i = feat_i.reshape(batch_size, n_points, n_steps, -1)
+                else:  # Background
+                    p_bg, r_bg = self.get_evaluation_points_bg(
+                        pixels_world, camera_world, di, bg_rotation)
+
+                    feat_i, sigma_i = self.background_generator(
+                        p_bg, r_bg, z_shape_bg, z_app_bg)
+                    sigma_i = sigma_i.reshape(batch_size, n_points, n_steps)
+                    feat_i = feat_i.reshape(batch_size, n_points, n_steps, -1)
+
+                    if mode == 'training':
+                        # As done in NeRF, add noise during training
+                        sigma_i += torch.randn_like(sigma_i)
+
+                feat.append(feat_i)
+                sigma.append(sigma_i)
+            sigma = F.relu(torch.stack(sigma, dim=0))
+            feat = torch.stack(feat, dim=0)
+
+            if self.sample_object_existance:
+                # TODO: have not tested hierarchical sampling with object existance
+                object_existance = self.get_object_existance(n_boxes, batch_size)
+                # add ones for bg
+                object_existance = np.concatenate(
+                    [object_existance, np.ones_like(
+                        object_existance[..., :1])], axis=-1)
+                object_existance = object_existance.transpose(1, 0)
+                sigma_shape = sigma.shape
+                sigma = sigma.reshape(sigma_shape[0] * sigma_shape[1], -1)
+                object_existance = torch.from_numpy(object_existance).reshape(-1)
+                # set alpha to 0 for respective objects
+                sigma[object_existance == 0] = 0.
+                sigma = sigma.reshape(*sigma_shape)
+
+            # Composite
+            sigma_sum, feat_weighted = self.composite_function(sigma, feat)
+
+            # Get Volume Weights
+            weights = self.calc_volume_weights(di, ray_vector, sigma_sum)
+            # END hierarchical sampling
+
         feat_map = torch.sum(weights.unsqueeze(-1) * feat_weighted, dim=-2)
 
         # Reformat output

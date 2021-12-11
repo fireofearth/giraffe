@@ -8,6 +8,7 @@ data:
 model:
   z_dim: 64
   z_dim_bg: 128
+  n_foreground: 2
   bounding_box_generator_kwargs:
     scale_range_min: [1.0, 1.0, 1.0]
     scale_range_max: [1.0, 1.0, 1.0]
