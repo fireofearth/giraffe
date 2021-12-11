@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
+#SBATCH --gres=gpu:4
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
 #SBATCH --time=2-00:00:00
 #SBATCH --job-name=giraffe.carlacars.64.train
@@ -10,6 +10,6 @@
 echo "load modules and Python environment"
 source $HOME/scratch/py38giraffe.sh
 
-python train.py configs/64res/carlacarsv4_64.yaml \
+python train.py configs/64res/carlacarsv5_64.yaml \
 	--exit-after 172000
 
