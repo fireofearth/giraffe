@@ -104,7 +104,9 @@ class Generator(nn.Module):
                  mask_foreground_outside=True, **kwargs):
         super().__init__()
         self.device = device
+        # (NEW) hierarchical sampling number of course samples
         self.n_ray_samples = n_ray_samples
+        # (NEW) hierarchical sampling number of fine samples
         self.n_fine_samples = n_fine_samples
         self.range_u = range_u
         self.range_v = range_v

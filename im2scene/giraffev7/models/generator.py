@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation as Rot
 from im2scene.camera import get_camera_mat, get_random_pose, get_camera_pose
 
 
-def sample_pdf(bins, weights, N_samples, det=False):
+def sample_pdf(bins, weights, N_samples, device, det=False):
     """Sample points from B batches of unnormalized piecewise constant distribution
     using inverse transform sampling.
     Based on: https://github.com/yenchenlin/nerf-pytorch
@@ -44,6 +44,7 @@ def sample_pdf(bins, weights, N_samples, det=False):
 
     # Invert CDF
     u = u.contiguous()
+    u = u.to(device)
     inds = torch.searchsorted(cdf, u, right=True)
     below = torch.max(torch.zeros_like(inds-1), inds-1)
     above = torch.min((cdf.shape[-1] - 1) * torch.ones_like(inds), inds)
@@ -86,7 +87,7 @@ class Generator(nn.Module):
             composition operator instead
     '''
 
-    def __init__(self, device, z_dim=256, z_dim_bg=128, decoder=None,
+    def __init__(self, device, z_dim=256, z_dim_bg=128, decoders=[],
                  range_u=(0, 0), range_v=(0.25, 0.25),
                  n_ray_samples=32,
                  n_fine_samples=32,
@@ -103,7 +104,9 @@ class Generator(nn.Module):
                  mask_foreground_outside=True, **kwargs):
         super().__init__()
         self.device = device
+        # (NEW) hierarchical sampling number of course samples
         self.n_ray_samples = n_ray_samples
+        # (NEW) hierarchical sampling number of fine samples
         self.n_fine_samples = n_fine_samples
         self.range_u = range_u
         self.range_v = range_v
@@ -126,11 +129,8 @@ class Generator(nn.Module):
 
         self.camera_matrix = get_camera_mat(fov=fov).to(device)
 
-        if decoder is not None:
-            self.decoder = decoder.to(device)
-        else:
-            self.decoder = None
-
+        # (NEW) multiple decoders
+        self.decoders = nn.ModuleList(decoders).to(device)
         if background_generator is not None:
             self.background_generator = background_generator.to(device)
         else:
@@ -454,8 +454,8 @@ class Generator(nn.Module):
                             only_render_background=False):
         res = self.resolution_vol
         device = self.device
-        n_steps = self.n_ray_samples
-        n_fine = self.n_fine_samples
+        n_steps = self.n_ray_samples # number of course samples
+        n_fine = self.n_fine_samples # number of fine samples
         n_points = res * res
         depth_range = self.depth_range
         batch_size = latent_codes[0].shape[0]
@@ -501,7 +501,7 @@ class Generator(nn.Module):
                     pixels_world, camera_world, di, transformations, i)
                 z_shape_i, z_app_i = z_shape_obj[:, i], z_app_obj[:, i]
 
-                feat_i, sigma_i = self.decoder(p_i, r_i, z_shape_i, z_app_i)
+                feat_i, sigma_i = self.decoders[i](p_i, r_i, z_shape_i, z_app_i)
 
                 if mode == 'training':
                     # As done in NeRF, add noise during training
@@ -561,10 +561,11 @@ class Generator(nn.Module):
             # START hierarchical sampling
             # If using hierarchical sampling then throw away sigma, feat
             # and recompute! This is wasteful. Improve?
-            bins = torch.cat((depth_range[0]*torch.ones_like(di[:,:,:1]), di))
-            # di_fine has shape (batch_size, n_points, n_steps)
-            di_fine = sample_pdf(bins, weights, n_fine, det=(mode != 'training'))
+            bins = torch.cat((depth_range[0]*torch.ones_like(di[:,:,:1]), di), -1)
+            # di_fine has shape (batch_size, n_points, n_fine)
+            di_fine = sample_pdf(bins, weights, n_fine, device, det=(mode != 'training'))
             di_fine = di_fine.detach()
+            # di has shape (batch_size, n_points, n_steps + n_fine)
             di, _ = torch.sort(torch.cat([di, di_fine], -1), -1)
 
             # Extract features and sigma from fine sampling. Duplicate code.
@@ -575,7 +576,7 @@ class Generator(nn.Module):
                         pixels_world, camera_world, di, transformations, i)
                     z_shape_i, z_app_i = z_shape_obj[:, i], z_app_obj[:, i]
 
-                    feat_i, sigma_i = self.decoder(p_i, r_i, z_shape_i, z_app_i)
+                    feat_i, sigma_i = self.decoders[i](p_i, r_i, z_shape_i, z_app_i)
 
                     if mode == 'training':
                         # As done in NeRF, add noise during training
@@ -590,16 +591,16 @@ class Generator(nn.Module):
                         sigma_i[mask_box == 0] = 0.
 
                     # Reshape
-                    sigma_i = sigma_i.reshape(batch_size, n_points, n_steps)
-                    feat_i = feat_i.reshape(batch_size, n_points, n_steps, -1)
+                    sigma_i = sigma_i.reshape(batch_size, n_points, n_steps + n_fine)
+                    feat_i = feat_i.reshape(batch_size, n_points, n_steps + n_fine, -1)
                 else:  # Background
                     p_bg, r_bg = self.get_evaluation_points_bg(
                         pixels_world, camera_world, di, bg_rotation)
 
                     feat_i, sigma_i = self.background_generator(
                         p_bg, r_bg, z_shape_bg, z_app_bg)
-                    sigma_i = sigma_i.reshape(batch_size, n_points, n_steps)
-                    feat_i = feat_i.reshape(batch_size, n_points, n_steps, -1)
+                    sigma_i = sigma_i.reshape(batch_size, n_points, n_steps + n_fine)
+                    feat_i = feat_i.reshape(batch_size, n_points, n_steps + n_fine, -1)
 
                     if mode == 'training':
                         # As done in NeRF, add noise during training

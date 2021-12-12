@@ -6,13 +6,17 @@ import numpy as np
 
 
 def get_model(cfg, device=None, len_dataset=0, **kwargs):
-    ''' Returns the giraffe model.
+    """Returns the giraffe model.
 
-    Args:
-        cfg (dict): imported yaml config
-        device (device): pytorch device
-        len_dataset (int): length of dataset
-    '''
+    Parameters
+    ==========
+    cfg : dict
+        imported yaml config
+    device : device
+        pytorch device
+    len_dataset : int
+        length of dataset
+    """
     decoder = cfg['model']['decoder']
     discriminator = cfg['model']['discriminator']
     generator = cfg['model']['generator']
@@ -29,12 +33,15 @@ def get_model(cfg, device=None, len_dataset=0, **kwargs):
     neural_renderer_kwargs = cfg['model']['neural_renderer_kwargs']
     z_dim = cfg['model']['z_dim']
     z_dim_bg = cfg['model']['z_dim_bg']
+    n_foreground = cfg['model']['n_foreground']
     img_size = cfg['data']['img_size']
 
-    # Load always the decoder
-    decoder = models.decoder_dict[decoder](
-        z_dim=z_dim, **decoder_kwargs
-    )
+    decoders = []
+    for _ in range(n_foreground):
+        _decoder = models.decoder_dict[decoder](
+            z_dim=z_dim, **decoder_kwargs
+        )
+        decoders.append(_decoder)
 
     if discriminator is not None:
         discriminator = discriminator_dict[discriminator](
@@ -42,11 +49,16 @@ def get_model(cfg, device=None, len_dataset=0, **kwargs):
     if background_generator is not None:
         background_generator = \
             models.background_generator_dict[background_generator](
-                z_dim=z_dim_bg, **background_generator_kwargs)
+                z_dim=z_dim_bg,
+                **background_generator_kwargs
+            )
     if bounding_box_generator is not None:
         bounding_box_generator = \
             models.bounding_box_generator_dict[bounding_box_generator](
-                z_dim=z_dim, **bounding_box_generator_kwargs)
+                z_dim=z_dim,
+                n_foreground=n_foreground,
+                **bounding_box_generator_kwargs
+            )
     if neural_renderer is not None:
         neural_renderer = models.neural_renderer_dict[neural_renderer](
             z_dim=z_dim, img_size=img_size, **neural_renderer_kwargs
@@ -54,7 +66,7 @@ def get_model(cfg, device=None, len_dataset=0, **kwargs):
 
     if generator is not None:
         generator = models.generator_dict[generator](
-            device, z_dim=z_dim, z_dim_bg=z_dim_bg, decoder=decoder,
+            device, z_dim=z_dim, z_dim_bg=z_dim_bg, decoders=decoders,
             background_generator=background_generator,
             bounding_box_generator=bounding_box_generator,
             neural_renderer=neural_renderer, **generator_kwargs)

@@ -26,7 +26,7 @@ class BoundingBoxGenerator(nn.Module):
             locations from
     '''
 
-    def __init__(self, n_boxes=1,
+    def __init__(self, n_foreground=1,
                  scale_range_min=[0.5, 0.5, 0.5],
                  scale_range_max=[0.5, 0.5, 0.5],
                  translation_range_min=[-0.75, -0.75, 0.],
@@ -37,7 +37,7 @@ class BoundingBoxGenerator(nn.Module):
                  prior_npz_file=None, **kwargs):
         super().__init__()
 
-        self.n_boxes = n_boxes
+        self.n_boxes = n_foreground
         self.scale_min = torch.tensor(scale_range_min).reshape(1, 1, 3)
         self.scale_range = (torch.tensor(scale_range_max) -
                             torch.tensor(scale_range_min)).reshape(1, 1, 3)
