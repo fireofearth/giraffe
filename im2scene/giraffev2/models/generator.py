@@ -64,14 +64,7 @@ class Generator(nn.Module):
         self.camera_matrix = get_camera_mat(fov=fov).to(device)
 
         # (NEW) multiple decoders
-        n_decoders = len(decoders)
-        if n_decoders > 0:
-            self.decoders = []
-            for idx in range(n_decoders):
-                self.decoders.append(decoders[idx].to(device))
-        else:
-            self.decoders = []
-
+        self.decoders = nn.ModuleList(decoders).to(device)
         if background_generator is not None:
             self.background_generator = background_generator.to(device)
         else:
