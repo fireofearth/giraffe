@@ -8,7 +8,6 @@ model:
   generator: simple
   discriminator: resnet
 training:
-  multi_gpu: true
   backup_every: 50_000
   out_dir:  out/carlacars_64res_2dgan
   out_tag: _model
