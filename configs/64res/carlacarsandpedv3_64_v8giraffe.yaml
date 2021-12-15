@@ -1,0 +1,42 @@
+# revert n_freq_posenc_views and z_dim since this seems to cause poorer performance
+# set full azimurth rotation range
+# fix hyperparameters to downscele fore/background properly.
+# Fix depth range.
+# using GIRAFFE v8 multiple decoders with gradual fading in and mask fix
+method: giraffev8
+data:
+  path: data/carlacarsandpedv1/images/64/*.png
+  fid_file: data/carlacarsandpedv1/fid_files/carlacars_64.npz
+  random_crop: False
+model:
+  n_foreground: 2
+  bounding_box_generator_kwargs:
+    scale_range_min: [1.0, 1.0, 1.0]
+    scale_range_max: [1.0, 1.0, 1.0]
+    translation_range_min: [-2.0, -2.0, 0.]
+    translation_range_max: [ 2.0,  2.0, 0.]
+    rotation_range: [0., 1.]
+    check_collison: True
+    collision_padding: 0.88
+  decoder_kwargs:
+    downscale_p_by: 3.0
+  background_generator_kwargs:
+    downscale_p_by: 9.0
+  generator_kwargs:
+    # rotation range
+    range_u: [0, 1]
+    # elevation range
+    range_v: [0.066987, 0.283058]
+    # radius range
+    range_radius: [7.0, 8.0]
+    # distances along the ray to sample points
+    depth_range: [2.0, 14.0]
+    # FOV determines spread of rays
+    fov: 30
+    # disable background rotation
+    backround_rotation_range: [0., 0.]
+training:
+  multi_gpu: true
+  backup_every: 50_000
+  out_dir:  out/carlacarsandped_64res_v8giraffe_v1dataset_v3config
+  out_tag: _model
