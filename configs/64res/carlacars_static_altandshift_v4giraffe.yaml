@@ -1,0 +1,36 @@
+# based on carlacarsv3 dataset.
+# static altitude and camera placement, other properties are changed.
+method: giraffev4
+data:
+  path: data/carlacars_static_altandshift/images/64/*.png
+  fid_file: data/carlacars_static_altandshift/fid_files/carlacars_64.npz
+  random_crop: False
+model:
+  bounding_box_generator_kwargs:
+    scale_range_min: [1.0, 1.0, 1.0]
+    scale_range_max: [1.0, 1.0, 1.0]
+    translation_range_min: [0., 0., 0.]
+    translation_range_max: [0., 0., 0.]
+    rotation_range: [0., 1.]
+  decoder_kwargs:
+    downscale_p_by: 3.0
+  background_generator_kwargs:
+    downscale_p_by: 9.0
+  generator_kwargs:
+    # rotation range
+    range_u: [0, 1]
+    # elevation range
+    range_v: [0.283058, 0.283058]
+    # radius range
+    range_radius: [7.0, 8.0]
+    # distances along the ray to sample points
+    depth_range: [4.0, 11.0]
+    # FOV determines spread of rays
+    fov: 30
+    # disable background rotation
+    backround_rotation_range: [0., 0.]
+training:
+  multi_gpu: true
+  backup_every: 50_000
+  out_dir:  out/carlacars_static_altandshift_64res_v4giraffe
+  out_tag: _model
