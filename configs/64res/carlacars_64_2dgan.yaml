@@ -1,8 +1,8 @@
 method: gan2d
 data:
-  path: data/comprehensive_cars/images/*.jpg
-  fid_file: data/comprehensive_cars/fid_files/comprehensiveCars_64.npz
-  random_crop: True
+  path: data/carlacarsv4/images/64/*.png
+  fid_file: data/carlacarsv4/fid_files/carlacars_64.npz
+  random_crop: False
   use_tanh_range: True
 model:
   generator: simple
