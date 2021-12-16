@@ -1,0 +1,17 @@
+# based on carlacarsv3 dataset.
+# static altitude, other properties are changed.
+method: gan2d
+data:
+  path: data/carlacars_static_altitude/images/64/*.png
+  fid_file: data/carlacars_static_altitude/fid_files/carlacars_64.npz
+  random_crop: False
+  use_tanh_range: True
+model:
+  generator: simple
+  discriminator: resnet
+training:
+  backup_every: 50_000
+  out_dir:  out/carlacars_static_altitude_64res_2dgan
+  out_tag: _model
+  learning_rate: 0.0001
+  batch_size: 64

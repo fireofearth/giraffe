@@ -29,7 +29,8 @@ class Trainer(BaseTrainer):
                  vis_dir=None,
                  generator=None,
                  multi_gpu=False,  fid_dict={},
-                 n_eval_iterations=10, **kwargs):
+                 n_eval_iterations=10,
+                 overwrite_visualization=True, **kwargs):
         self.model = model
         if multi_gpu:
             self.generator = torch.nn.DataParallel(self.model.generator)
@@ -50,7 +51,7 @@ class Trainer(BaseTrainer):
         self.device = device
         self.vis_dir = vis_dir
 
-        self.overwrite_visualization = True
+        self.overwrite_visualization = overwrite_visualization
         self.fid_dict = fid_dict
         self.n_eval_iterations = n_eval_iterations
 
